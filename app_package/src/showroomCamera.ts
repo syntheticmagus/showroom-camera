@@ -116,7 +116,7 @@ export class ShowroomCamera
         this._currentState = ShowroomCameraState.ArcRotate;
     }
     
-    private *_animateToMatchmoveStateCoroutine(state: IShowroomCameraMatchmoveState) {
+    private *_animateToMatchmoveStateCoroutine(state: IShowroomCameraMatchmoveState, seconds: number) {
         if (this._currentState === ShowroomCameraState.ArcRotate) {
             this._alignTransformToArcRotateCamera();
 
@@ -130,7 +130,7 @@ export class ShowroomCamera
         const startingFocus = this._currentFocusPosition.clone();
         const startingUp = this._transform.up.clone();
 
-        const ANIMATION_FRAMES = 60; // TODO: Make this configurable or something.
+        const ANIMATION_FRAMES = Math.round(seconds * 60 / this._scene.getAnimationRatio());
         for (let frame = 0; frame <= ANIMATION_FRAMES; ++frame) {
             let t = frame / ANIMATION_FRAMES;
 
@@ -166,12 +166,12 @@ export class ShowroomCamera
         this.setToMatchmoveState(state);
     }
 
-    public async animateToMatchmoveState(state: IShowroomCameraMatchmoveState): Promise<void> {
+    public async animateToMatchmoveState(state: IShowroomCameraMatchmoveState, seconds: number = 1): Promise<void> {
         this._perFrameObservable.cancelAllCoroutines();
-        return this._perFrameObservable.runCoroutineAsync(this._animateToMatchmoveStateCoroutine(state));
+        return this._perFrameObservable.runCoroutineAsync(this._animateToMatchmoveStateCoroutine(state, seconds));
     }
 
-    private *_animateToArcRotateStateCoroutine(state: IShowroomCameraArcRotateState) {
+    private *_animateToArcRotateStateCoroutine(state: IShowroomCameraArcRotateState, seconds: number) {
         if (this._currentState === ShowroomCameraState.ArcRotate) {
             this._alignTransformToArcRotateCamera();
 
@@ -192,7 +192,7 @@ export class ShowroomCamera
         const destinationFocus = new Vector3();
         this._getArcRotateCameraPoseComponentsToRef(destinationPosition, TmpVectors.Vector3[0], destinationUp, destinationFocus);
 
-        const ANIMATION_FRAMES = 60; // TODO: Make this configurable or something.
+        const ANIMATION_FRAMES = Math.round(seconds * 60 / this._scene.getAnimationRatio());
         for (let frame = 0; frame <= ANIMATION_FRAMES; ++frame) {
             let t = frame / ANIMATION_FRAMES;
 
@@ -223,9 +223,9 @@ export class ShowroomCamera
         this.setToArcRotateState(state);
     }
 
-    public async animateToArcRotateState(state: IShowroomCameraArcRotateState): Promise<void> {
+    public async animateToArcRotateState(state: IShowroomCameraArcRotateState, seconds: number = 1): Promise<void> {
         this._perFrameObservable.cancelAllCoroutines();
-        return this._perFrameObservable.runCoroutineAsync(this._animateToArcRotateStateCoroutine(state));
+        return this._perFrameObservable.runCoroutineAsync(this._animateToArcRotateStateCoroutine(state, seconds));
     }
 
     public static Demo(canvas: HTMLCanvasElement): void {
@@ -278,6 +278,11 @@ export class ShowroomCamera
                 await Tools.DelayAsync(7000);
                 await camera.animateToMatchmoveState(matchmoveState);
                 await Tools.DelayAsync(7000);
+
+                camera.animateToArcRotateState(arcRotateState, 4);
+                await Tools.DelayAsync(3000);
+                camera.animateToMatchmoveState(matchmoveState, 4);
+                await Tools.DelayAsync(2000);
             }
         }
         setStateFunction();
