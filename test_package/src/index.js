@@ -1,4 +1,4 @@
-import { initializeBabylonApp } from "app_package";
+import { initializeBabylonApp, ShowroomCamera, ShowroomCameraDemoScene } from "app_package";
 
 document.body.style.width = "100%";
 document.body.style.height = "100%";
@@ -24,10 +24,4 @@ canvas.style.height = "100%";
 canvas.style.display = "block";
 div.appendChild(canvas);
 
-let assetsHostUrl;
-if (DEV_BUILD) {
-    assetsHostUrl = "http://127.0.0.1:8181/";
-} else {
-    assetsHostUrl = "https://nonlocal-assets-host-url/";
-}
-initializeBabylonApp({ canvas: canvas, assetsHostUrl: assetsHostUrl });
+ShowroomCamera.Demo(canvas);
