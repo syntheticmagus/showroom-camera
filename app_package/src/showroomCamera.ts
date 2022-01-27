@@ -117,7 +117,7 @@ export class ShowroomCamera
     }
     
     private *_animateToMatchmoveStateCoroutine(state: IShowroomCameraMatchmoveState) {
-        if (this._currentState = ShowroomCameraState.ArcRotate) {
+        if (this._currentState === ShowroomCameraState.ArcRotate) {
             this._alignTransformToArcRotateCamera();
 
             this._scene.setActiveCameraByName("showroomCamera");
@@ -163,7 +163,7 @@ export class ShowroomCamera
             yield;
         }
 
-        this._perFrameObservable.runCoroutineAsync(this._matchmoveCoroutine(state));
+        this.setToMatchmoveState(state);
     }
 
     public async animateToMatchmoveState(state: IShowroomCameraMatchmoveState): Promise<void> {
@@ -171,10 +171,62 @@ export class ShowroomCamera
         return this._perFrameObservable.runCoroutineAsync(this._animateToMatchmoveStateCoroutine(state));
     }
 
-    // STRATEGY FOR TRANSITIONING TO ARC ROTATE STATE: Set the position of the arc rotate camera
-    // without activating it so that we can get its exact work matrix, then animate to that before
-    // activating it. It's the only way to be sure we can keep ArcRotateCamera's established behavior
-    // and still transition to it seamlessly.
+    private *_animateToArcRotateStateCoroutine(state: IShowroomCameraArcRotateState) {
+        if (this._currentState === ShowroomCameraState.ArcRotate) {
+            this._alignTransformToArcRotateCamera();
+
+            this._scene.setActiveCameraByName("showroomCamera");
+            this._arcRotateCamera.detachControl();
+
+            this._currentState = ShowroomCameraState.Matchmove;
+        }
+
+        this._transform.computeWorldMatrix(true);
+        const startingPosition = this._transform.position.clone();
+        const startingUp = this._transform.up.clone();
+        const startingFocus = this._currentFocusPosition.clone();
+
+        this._poseArcRotateCamera(state);
+        const destinationPosition = new Vector3();
+        const destinationUp = new Vector3();
+        const destinationFocus = new Vector3();
+        this._getArcRotateCameraPoseComponentsToRef(destinationPosition, TmpVectors.Vector3[0], destinationUp, destinationFocus);
+
+        const ANIMATION_FRAMES = 60; // TODO: Make this configurable or something.
+        for (let frame = 0; frame <= ANIMATION_FRAMES; ++frame) {
+            let t = frame / ANIMATION_FRAMES;
+
+            Vector3.LerpToRef(startingPosition, destinationPosition, t, this._transform.position);
+
+            const focusT = TmpVectors.Vector3[1];
+            Vector3.LerpToRef(startingFocus, destinationFocus, t, focusT);
+            this._currentFocusPosition.copyFrom(focusT);
+
+            const forwardT = TmpVectors.Vector3[0];
+            focusT.subtractToRef(this._transform.position, forwardT);
+            forwardT.normalize();
+
+            // Likewise, we reuse temp vector 1 because focusT is not needed after calculating forwardT.
+            const upT = TmpVectors.Vector3[1];
+            Vector3.LerpToRef(startingUp, destinationUp, t, upT);
+
+            const rightT = TmpVectors.Vector3[2];
+            Vector3.CrossToRef(forwardT, upT, rightT);
+            Vector3.CrossToRef(rightT, forwardT, upT);
+            upT.normalize();
+
+            Quaternion.FromLookDirectionRHToRef(forwardT, upT, this._transform.rotationQuaternion!);
+
+            yield;
+        }
+
+        this.setToArcRotateState(state);
+    }
+
+    public async animateToArcRotateState(state: IShowroomCameraArcRotateState): Promise<void> {
+        this._perFrameObservable.cancelAllCoroutines();
+        return this._perFrameObservable.runCoroutineAsync(this._animateToArcRotateStateCoroutine(state));
+    }
 
     public static Demo(canvas: HTMLCanvasElement): void {
         const engine = new Engine(canvas);
@@ -219,10 +271,13 @@ export class ShowroomCamera
         const setStateFunction = async function() {
             while (true) {
                 camera.setToArcRotateState(arcRotateState);
-                await Tools.DelayAsync(5000);
-                //camera.setToMatchmoveState(matchmoveState);
-                camera.animateToMatchmoveState(matchmoveState);
-                await Tools.DelayAsync(5000);
+                await Tools.DelayAsync(7000);
+                camera.setToMatchmoveState(matchmoveState);
+                await Tools.DelayAsync(7000);
+                await camera.animateToArcRotateState(arcRotateState);
+                await Tools.DelayAsync(7000);
+                await camera.animateToMatchmoveState(matchmoveState);
+                await Tools.DelayAsync(7000);
             }
         }
         setStateFunction();
