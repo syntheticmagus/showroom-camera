@@ -13,6 +13,8 @@ export interface IShowroomCameraMatchmoveState {
 export interface IShowroomCameraArcRotateState {
     startingPosition: Vector3;
     target: Vector3;
+    lowerRadiusLimit?: number;
+    upperRadiusLimit?: number;
 }
 
 export class ShowroomCamera
@@ -25,6 +27,21 @@ export class ShowroomCamera
 
     private _currentFocusPosition: Vector3;
     private _currentState: ShowroomCameraState;
+
+    public set fov(value: number) {
+        this._camera.fov = value;
+        this._arcRotateCamera.fov = value;
+    }
+
+    public set minZ(value: number) {
+        this._camera.minZ = value;
+        this._arcRotateCamera.minZ = value;
+    }
+
+    public set maxZ(value: number) {
+        this._camera.maxZ = value;
+        this._arcRotateCamera.maxZ = value;
+    }
 
     public constructor (scene: Scene) {
         this._scene = scene;
@@ -66,8 +83,8 @@ export class ShowroomCamera
         this._arcRotateCamera.upperRadiusLimit = 0;
         this._arcRotateCamera.radius = 0;
         this._arcRotateCamera.position.copyFrom(state.startingPosition);
-        this._arcRotateCamera.upperRadiusLimit = 2 * Vector3.Distance(state.startingPosition, state.target);
-        this._arcRotateCamera.lowerRadiusLimit = 0.1 * this._arcRotateCamera.upperRadiusLimit;
+        this._arcRotateCamera.upperRadiusLimit = state.upperRadiusLimit ?? 2 * Vector3.Distance(state.startingPosition, state.target);
+        this._arcRotateCamera.lowerRadiusLimit = state.lowerRadiusLimit ?? 0.1 * this._arcRotateCamera.upperRadiusLimit;
         this._arcRotateCamera.setTarget(state.target);
     }
 
