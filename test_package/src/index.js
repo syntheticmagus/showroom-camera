@@ -1,4 +1,4 @@
-import { initializeBabylonApp, ShowroomCamera, ShowroomCameraDemoScene } from "app_package";
+import { ShowroomCamera } from "app_package";
 
 document.body.style.width = "100%";
 document.body.style.height = "100%";
@@ -6,7 +6,7 @@ document.body.style.margin = "0";
 document.body.style.padding = "0";
 
 const title = document.createElement("p");
-title.innerText = "Babylon.js NPM Package Template";
+title.innerText = "Showroom Camera Demo";
 title.style.fontSize = "32pt";
 title.style.textAlign = "center";
 document.body.appendChild(title);
