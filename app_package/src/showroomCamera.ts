@@ -147,7 +147,7 @@ export class ShowroomCamera
         const startingFocus = this._currentFocusPosition.clone();
         const startingUp = this._transform.up.clone();
 
-        const ANIMATION_FRAMES = Math.round(seconds * 60 / Math.min(this._scene.getAnimationRatio(), 1));
+        const ANIMATION_FRAMES = Math.round(seconds * 60 / Math.max(this._scene.getAnimationRatio(), 1));
         for (let frame = 0; frame <= ANIMATION_FRAMES; ++frame) {
             let t = frame / ANIMATION_FRAMES;
 
