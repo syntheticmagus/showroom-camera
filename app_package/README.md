@@ -2,6 +2,9 @@
 
 A Babylon.js specialty camera targeted at ecommerce scenarios.
 
+ - [Demo Page](https://syntheticmagus.github.io/showroom-camera/)
+ - [Demo source](https://github.com/syntheticmagus/showroom-camera/blob/9cddba90afe84ce8a84c71b66cdeeead88644b26/app_package/src/showroomCamera.ts#L248-L310)
+
 ## Usage
 
 The `ShowroomCamera` is specialized for ecommerce scenarios, specifically focusing
