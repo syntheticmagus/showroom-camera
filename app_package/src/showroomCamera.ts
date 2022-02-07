@@ -43,6 +43,10 @@ export class ShowroomCamera
         this._arcRotateCamera.maxZ = value;
     }
 
+    public get arcRotateCamera(): ArcRotateCamera {
+        return this._arcRotateCamera;
+    }
+
     public constructor (scene: Scene) {
         this._scene = scene;
         this._transform = new TransformNode("showroomRoot", this._scene);
