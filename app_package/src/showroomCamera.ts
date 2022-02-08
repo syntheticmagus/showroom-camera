@@ -23,6 +23,7 @@ export class ShowroomCamera
     private _transform: TransformNode;
     private _camera: FreeCamera;
     private _arcRotateCamera: ArcRotateCamera;
+    private _enableMouseWheel: boolean;
     private _perFrameObservable: Observable<void>;
 
     private _currentFocusPosition: Vector3;
@@ -43,8 +44,26 @@ export class ShowroomCamera
         this._arcRotateCamera.maxZ = value;
     }
 
-    public get arcRotateCamera(): ArcRotateCamera {
-        return this._arcRotateCamera;
+    public set enableMouseWheel(value: boolean) {
+        this._enableMouseWheel = value;
+        if (this._arcRotateCamera.inputs) {
+            this._arcRotateCamera.inputs.remove(this._arcRotateCamera.inputs.attached.mousewheel);
+        }
+    }
+
+    public set arcRotateZoomPercent(value: number) {
+        if (this._currentState === ShowroomCameraState.ArcRotate) {
+            const targetRadius = value * (this._arcRotateCamera.upperRadiusLimit! - this._arcRotateCamera.lowerRadiusLimit!) + this._arcRotateCamera.lowerRadiusLimit!;
+            const arcRotateCamera = this._arcRotateCamera;
+
+            this._perFrameObservable.cancelAllCoroutines();
+            this._perFrameObservable.runCoroutineAsync(function* () {
+                while (Math.abs(targetRadius - arcRotateCamera.radius) > 0.001) {
+                    arcRotateCamera.radius = 0.05 * targetRadius + 0.95 * arcRotateCamera.radius;
+                    yield;
+                }
+            }());
+        }
     }
 
     public constructor (scene: Scene) {
@@ -56,6 +75,7 @@ export class ShowroomCamera
         this._camera.parent = this._transform;
 
         this._arcRotateCamera = new ArcRotateCamera("showroomArcRotateCamera", 0, 0, 0, Vector3.Zero(), this._scene, false);
+        this._enableMouseWheel = true;
 
         this._perFrameObservable = new Observable<void>();
         this._scene.onBeforeRenderObservable.add(() => {
@@ -130,7 +150,11 @@ export class ShowroomCamera
 
         this._scene.setActiveCameraByName("showroomArcRotateCamera");
         this._poseArcRotateCamera(state);
+        
         this._arcRotateCamera.attachControl();
+        if (!this._enableMouseWheel) {
+            this._arcRotateCamera.inputs.remove(this._arcRotateCamera.inputs.attached.mousewheel);
+        }
 
         this._currentFocusPosition.copyFrom(state.target);
 
@@ -213,7 +237,7 @@ export class ShowroomCamera
         const destinationFocus = new Vector3();
         this._getArcRotateCameraPoseComponentsToRef(destinationPosition, TmpVectors.Vector3[0], destinationUp, destinationFocus);
 
-        const ANIMATION_FRAMES = Math.round(seconds * 60 / this._scene.getAnimationRatio());
+        const ANIMATION_FRAMES = Math.round(seconds * 60 / Math.max(this._scene.getAnimationRatio(), 1));
         for (let frame = 0; frame <= ANIMATION_FRAMES; ++frame) {
             let t = frame / ANIMATION_FRAMES;
 
