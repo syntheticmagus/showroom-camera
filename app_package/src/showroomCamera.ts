@@ -15,6 +15,7 @@ export interface IShowroomCameraArcRotateState {
     target: Vector3;
     lowerRadiusLimit?: number;
     upperRadiusLimit?: number;
+    wheelDeltaPercentage?: number;
 }
 
 export class ShowroomCamera
@@ -109,6 +110,7 @@ export class ShowroomCamera
         this._arcRotateCamera.position.copyFrom(state.startingPosition);
         this._arcRotateCamera.upperRadiusLimit = state.upperRadiusLimit ?? 2 * Vector3.Distance(state.startingPosition, state.target);
         this._arcRotateCamera.lowerRadiusLimit = state.lowerRadiusLimit ?? 0.1 * this._arcRotateCamera.upperRadiusLimit;
+        this._arcRotateCamera.wheelDeltaPercentage = state.wheelDeltaPercentage ?? 0.01;
         this._arcRotateCamera.setTarget(state.target);
     }
 

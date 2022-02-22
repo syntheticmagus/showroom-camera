@@ -1,6 +1,6 @@
 {
   "name": "@syntheticmagus/showroom-camera",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A Babylon.js specialty camera targeted at ecommerce scenarios.",
   "repository": {
     "url": "https://github.com/syntheticmagus/showroom-camera"
