@@ -1,4 +1,4 @@
-import { ShowroomCamera } from "app_package";
+import { ShowroomCameraDemo } from "app_package";
 
 document.body.style.width = "100%";
 document.body.style.height = "100%";
@@ -24,4 +24,4 @@ canvas.style.height = "100%";
 canvas.style.display = "block";
 div.appendChild(canvas);
 
-ShowroomCamera.Demo(canvas);
+ShowroomCameraDemo.Run(canvas);
