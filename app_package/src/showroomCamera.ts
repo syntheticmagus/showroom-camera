@@ -1,25 +1,76 @@
-import { ArcRotateCamera, FreeCamera, Observable, Quaternion, Scene, TmpVectors, TransformNode, Vector3 } from "@babylonjs/core";
+import { ArcRotateCamera } from "@babylonjs/core/Cameras/arcRotateCamera";
+import { FreeCamera } from "@babylonjs/core/Cameras/freeCamera";
+import { Quaternion, TmpVectors, Vector3 } from "@babylonjs/core/Maths/math";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Observable } from "@babylonjs/core/Misc/observable";
+import "@babylonjs/core/Misc/observableCoroutine";
+import { Scene } from "@babylonjs/core/scene";
 
 enum ShowroomCameraState {
     Matchmove,
     ArcRotate
 }
 
+/**
+ * Data representing a state where the camera is following the motion of a
+ * TransformNode in the scene.
+ */
 export interface IShowroomCameraMatchmoveState {
+    /**
+     * The TransformNode the camera should follow in this state.
+     */
     matchmoveTarget: TransformNode;
+
+    /**
+     * Approximately how far in front of the camera the objects 
+     * being viewed are; this is used to influence the procedural
+     * animations. If not provided, focus depth of 1 is used.
+     */
     focusDepth?: number;
 }
 
+/**
+ * Data representing a state where the camera is behaving as an ArcRotateCamera.
+ */
 export interface IShowroomCameraArcRotateState {
+    /**
+     * The position the camera should be in when it initiates arc-rotate 
+     * behavior.
+     */
+
     startingPosition: Vector3;
+    /**
+     * The target position the arc-rotate behavior should be focused on.
+     */
     target: Vector3;
+
+    /**
+     * Optional parameter controlling how close the camera is allowed to get to 
+     * its target. Defaults to one tenth of the upper radius limit.
+     */
     lowerRadiusLimit?: number;
+
+    /**
+     * Optional parameter controlling how far the camera is allowed to get from 
+     * its target. Defaults to twice the distance between the target and the 
+     * starting position.
+     */
     upperRadiusLimit?: number;
+
+    /**
+     * Optional parameter controlling how quickly the scroll wheel moves the
+     * camera forward and backward. Defaults to 0.01.
+     */
     wheelDeltaPercentage?: number;
 }
 
-export class ShowroomCamera
-{
+/**
+ * Camera system designed to provide both matchmoving and arc-rotate behavior,
+ * as well as transitions between, in a simple combined abstraction. Note that
+ * this is not a single Camera in the Babylon.js sense, but a mechanism to 
+ * provide sophisticated camera behavior via a minimal, easy-to-use API.
+ */
+export class ShowroomCamera {
     private _scene: Scene;
     private _transform: TransformNode;
     private _camera: FreeCamera;
@@ -30,21 +81,36 @@ export class ShowroomCamera
     private _currentFocusPosition: Vector3;
     private _currentState: ShowroomCameraState;
 
+    /**
+     * Sets camera FOV.
+     */
     public set fov(value: number) {
         this._camera.fov = value;
         this._arcRotateCamera.fov = value;
     }
 
+    /**
+     * Sets the camera's near clip plane.
+     */
     public set minZ(value: number) {
         this._camera.minZ = value;
         this._arcRotateCamera.minZ = value;
     }
 
+    /**
+     * Sets the camera's far clip plane.
+     */
     public set maxZ(value: number) {
         this._camera.maxZ = value;
         this._arcRotateCamera.maxZ = value;
     }
 
+    /**
+     * Sets whether or not the camera will respond to mouse
+     * wheel movement when in an arc-rotate state. This defaults
+     * to true, but disabling this is useful if/when the scroll
+     * wheel is needed for something else in the experience.
+     */
     public set enableMouseWheel(value: boolean) {
         this._enableMouseWheel = value;
         if (this._arcRotateCamera.inputs) {
@@ -52,6 +118,13 @@ export class ShowroomCamera
         }
     }
 
+    /**
+     * Utility method providing an alternative to scroll wheel
+     * "zooming." Setting this value will cause the camera in an
+     * arc-rotate state to procedurally animate to a certain distance
+     * from the target determined by a "percentage" of the way from
+     * the lower radius limit to the upper radius limit.
+     */
     public set arcRotateZoomPercent(value: number) {
         if (this._currentState === ShowroomCameraState.ArcRotate) {
             const targetRadius = value * (this._arcRotateCamera.upperRadiusLimit! - this._arcRotateCamera.lowerRadiusLimit!) + this._arcRotateCamera.lowerRadiusLimit!;
@@ -135,6 +208,10 @@ export class ShowroomCamera
         Quaternion.FromLookDirectionRHToRef(forward, up, this._transform.rotationQuaternion!);
     }
 
+    /**
+     * Immediately sets the camera into a matchmoving state, with no transition.
+     * @param state the target matchmoving state
+     */
     public setToMatchmoveState(state: IShowroomCameraMatchmoveState): void {
         this._arcRotateCamera.detachControl();
         this._scene.setActiveCameraByName("showroomCamera");
@@ -147,6 +224,10 @@ export class ShowroomCamera
         this._currentState = ShowroomCameraState.Matchmove;
     }
 
+    /**
+     * Immediately sets the camera into an arc-rotate state, with no transition.
+     * @param state the target arc-rotate state
+     */
     public setToArcRotateState(state: IShowroomCameraArcRotateState): void {
         this._perFrameObservable.cancelAllCoroutines();
 
@@ -213,6 +294,13 @@ export class ShowroomCamera
         this.setToMatchmoveState(state);
     }
 
+    /**
+     * Begins transitioning the camera to a matchmoving state using a procedural animation. Setting
+     * to another state can smoothly interrupt this process.
+     * @param state the target matchmoving state
+     * @param seconds optional parameter specifying how long the procedural animation should take
+     * @returns a promise which resolves when the procedural animation completes
+     */
     public async animateToMatchmoveState(state: IShowroomCameraMatchmoveState, seconds: number = 1): Promise<void> {
         this._perFrameObservable.cancelAllCoroutines();
         return this._perFrameObservable.runCoroutineAsync(this._animateToMatchmoveStateCoroutine(state, seconds));
@@ -270,6 +358,13 @@ export class ShowroomCamera
         this.setToArcRotateState(state);
     }
 
+    /**
+     * Begins transitioning the camera to an arc-rotate state using a procedural animation. Setting
+     * to another state can smoothly interrupt this process.
+     * @param state the target arc-rotate state
+     * @param seconds optional parameter specifying how long the procedural animation should take
+     * @returns a promise which resolves when the procedural animation completes
+     */
     public async animateToArcRotateState(state: IShowroomCameraArcRotateState, seconds: number = 1): Promise<void> {
         this._perFrameObservable.cancelAllCoroutines();
         return this._perFrameObservable.runCoroutineAsync(this._animateToArcRotateStateCoroutine(state, seconds));
