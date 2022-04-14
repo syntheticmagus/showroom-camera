@@ -1,7 +1,20 @@
-import { Engine, Scene, MeshBuilder, TransformNode, Quaternion, Vector3, Space, Tools } from "@babylonjs/core";
-import { ShowroomCamera, IShowroomCameraMatchmoveState, IShowroomCameraArcRotateState } from "./showroomCamera";
+import { Engine } from "@babylonjs/core/Engines/engine";
+import { Quaternion, Space, Vector3 } from "@babylonjs/core/Maths/math";
+import { MeshBuilder } from "@babylonjs/core/Meshes/meshBuilder";
+import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
+import { Tools } from "@babylonjs/core/Misc/tools";
+import { Scene } from "@babylonjs/core/scene";
+import "@babylonjs/core/Helpers/sceneHelpers";
+import { IShowroomCameraArcRotateState, IShowroomCameraMatchmoveState, ShowroomCamera } from "./showroomCamera";
 
+/**
+ * Container for demo scene showing off various behaviors of the ShowroomCamera.
+ */
 export class ShowroomCameraDemo {
+    /**
+     * Creates a simple default scene demonstrating the various behaviors of the ShowroomCamera.
+     * @param canvas the canvas on which the scene should be rendered
+     */
     public static Run(canvas: HTMLCanvasElement): void {
         const engine = new Engine(canvas);
         const scene = new Scene(engine);
